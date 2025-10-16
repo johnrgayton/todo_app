@@ -39,3 +39,70 @@ def print_items(items, *, title=None, numbered=False, empty_msg=None, bullet="- 
     else:
         for it in items_list:
             print(f"{bullet}{it}" if bullet else f"{it}")
+
+
+import json
+from datetime import datetime
+from pathlib import Path
+
+
+class ActionTracker:
+    """Record user actions to a JSON Lines file.
+
+    Each line is a JSON object with at minimum:
+      - timestamp: ISO 8601
+      - action: string (added, edited, deleted, listed, etc.)
+      - details: dict with action-specific keys
+
+    The log file defaults to a file named `actions.log` next to this module.
+
+    For tests, pass a temporary path.
+    """
+
+    def __init__(self, path: str | Path | None = None):
+        if path is None:
+            self.path = Path(__file__).resolve().parent / "actions.log"
+        else:
+            self.path = Path(path)
+
+        # Ensure parent exists
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            # Best-effort: omit creating if not allowed
+            pass
+
+    def _now(self) -> str:
+        return datetime.utcnow().isoformat() + "Z"
+
+    def _write(self, record: dict) -> None:
+        record.setdefault("timestamp", self._now())
+        # Write a JSON line
+        with open(self.path, "a", encoding="utf8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    def record(self, action: str, details: dict | None = None) -> None:
+        payload = {"action": action, "details": details or {}}
+        self._write(payload)
+
+    # convenience helpers
+    def added(self, item: str) -> None:
+        self.record("added", {"item": item})
+
+    def edited(self, old: str, new: str, index: int | None = None) -> None:
+        d = {"old": old, "new": new}
+        if index is not None:
+            d["index"] = index
+        self.record("edited", d)
+
+    def deleted(self, item: str, index: int | None = None) -> None:
+        d = {"item": item}
+        if index is not None:
+            d["index"] = index
+        self.record("deleted", d)
+
+    def listed(self, count: int | None = None) -> None:
+        d = {}
+        if count is not None:
+            d["count"] = count
+        self.record("listed", d)

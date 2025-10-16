@@ -1,9 +1,11 @@
 from todo_app import print_items
+from todo_app.utils import ActionTracker
 
 commands_list = ["add", "list", "edit", "delete", "exit"]
 cmd_ls_str = ", ".join(commands_list)
 
 todos = []
+tracker = ActionTracker()
 
 
 while True:
@@ -12,10 +14,12 @@ while True:
     if command == "add":
         todo = input("Enter a new to-do item: ").strip()
         todos.append(todo)
+        tracker.added(todo)
         print(f'Added: "{todo}"')
 
     elif command == "list":
         print_items(todos, title="To-do items:", numbered=True, empty_msg="No to-do items.")
+        tracker.listed(len(todos))
 
     elif command == "edit":
         if not todos:
@@ -28,6 +32,7 @@ while True:
                 new_text = input("Enter the new text: ").strip()
                 old = todos[index]
                 todos[index] = new_text
+                tracker.edited(old, new_text, index=index)
                 print(f'Updated: "{old}" -> "{new_text}"')
             else:
                 print("Invalid index.")
@@ -42,6 +47,7 @@ while True:
             index = int(input("Enter the number of the to-do item to delete: ")) - 1
             if 0 <= index < len(todos):
                 removed = todos.pop(index)
+                tracker.deleted(removed, index=index)
                 print(f'Deleted: "{removed}"')
             else:
                 print("Invalid index.")

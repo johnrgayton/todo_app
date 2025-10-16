@@ -1,6 +1,12 @@
 import io
 import sys
 import unittest
+from pathlib import Path
+
+# Ensure the package root is on sys.path so tests can import todo_app
+root = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(root))
+
 from todo_app.utils import print_items
 
 
